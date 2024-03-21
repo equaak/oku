@@ -1,13 +1,17 @@
-import logo from './Group 56 (1).svg'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom';
+
+import star from './star.svg'
 import right from './Arrow 3 (1).png'
 import left from './Arrow 2.png'
 import dropdownarrow from './dropdown-arrow.svg'
-
-import './Home.css'
-import { useEffect, useState } from 'react'
 import axios from 'axios'
+import profile from './profile-logo.svg';
+import group from './group.svg';
+import room from './room.svg'
+
 import userStore from '../../store/UserStore'
-import { useFetcher, useNavigate } from 'react-router-dom';
+import './Home.css'
 
 const Home = () => {
     const [periodType, setPeriodType] = useState(0)
@@ -18,7 +22,6 @@ const Home = () => {
     const [day, setDay] = useState(currentDate.getDate())
     const [weekDay, setWeekDay] = useState('')
     const navigate = useNavigate();
-    const lessonCount = 6;
     
 
     const convertWeekDay = (index) => {
@@ -60,13 +63,17 @@ const Home = () => {
         setYear(currentDate.getFullYear())
     }, [currentDate])
 
+    useEffect(() => {
+        console.log(schedule)
+    }, [schedule])
+
     const compareTimes = (time1, time2) => {
         let [hours1, minutes1] = time1.split(":").map(Number);
         let [hours2, minutes2] = time2.split(":").map(Number);
     
-        var totalMinutes1 = hours1 * 60 + minutes1;
-        var totalMinutes2 = hours2 * 60 + minutes2;
-
+        let totalMinutes1 = hours1 * 60 + minutes1;
+        let totalMinutes2 = hours2 * 60 + minutes2;
+        console.log(totalMinutes1, totalMinutes2)
         if (totalMinutes1 < totalMinutes2) {
             return -1;
         } else if (totalMinutes1 > totalMinutes2) {
@@ -87,35 +94,33 @@ const Home = () => {
         }
         let responce;
         if(periodType === 2){
-            responce = await axios.get('http://localhost:5000/schedule/month?month=03');
+            responce = await axios.get(`http://localhost:5000/schedule/month?month=${monthString}`);
         }
         else if(periodType === 1){
-            responce = await axios.get('http://localhost:5000/schedule/week?date=2024-01-20');
+            responce = await axios.get(`http://localhost:5000/schedule/week?date=${year}-${monthString}-${dayString}`);
 
         }
         else{
             responce = await axios.get(`http://localhost:5000/schedule/day?date=${year}-${monthString}-${dayString}`);
             if (responce.data.length == 0){
-                let tempSchedule = [];
-                for(let i = 0; i < lessonCount; i++){
-                    tempSchedule.push('-');
-                }
-                setSchedule(tempSchedule);
+                setSchedule(['Пустой день']);
             }
             else{
                 let tempSchedule = [];
                 let currentTimeString = currentDate.toLocaleTimeString();
                 let curTime = currentTimeString.split(':')[0] + ':' + currentTimeString.split(':')[1];
-                for(let i = 0; i < lessonCount; i++){
+                for(let i = 0; i < responce.data.length; i++){
                     if(responce.data[i] !== undefined){
                         if(responce.data[i].start_of_lesson !== undefined && responce.data[i].end_of_lesson !== undefined){
+                            console.log(curTime)
+                            console.log(responce.data[i].start_of_lesson, responce.data[i].end_of_lesson)
                             if(compareTimes(responce.data[i].start_of_lesson, curTime) === -1 && compareTimes(responce.data[i].end_of_lesson, curTime) === 1){
                                 responce.data[i]['active'] = 'Идет';
                             }
                             else if(compareTimes(responce.data[i].start_of_lesson, curTime) === 1 && compareTimes(responce.data[i].end_of_lesson, curTime) === 1){
-                                responce.data[i]['active'] = 'Прошел';
+                                responce.data[i]['active'] = 'Не начат';
                             }
-                            else{
+                            else if(compareTimes(responce.data[i].start_of_lesson, curTime) === -1 && compareTimes(responce.data[i].end_of_lesson, curTime) === -1){
                                 responce.data[i]['active'] = 'Не начат';
                             }
                         }
@@ -208,9 +213,54 @@ const Home = () => {
                         <main className='main-block'>
                             {periodType === 0 ? 
                                 schedule.map((item) => {
+                                    if(item == 'Пустой день'){
+                                        return(
+                                            <div className='lesson'>
+                                                <div className='lesson-left'>
+                                                    <div className='lesson-part'>
+                                                        <img src={star} alt='star'/>
+                                                        <p className='lesson-label'>Свободный период</p>
+                                                    </div>
+                                                    <div className='lesson-part'>
+                                                        <img src={profile} alt='' />
+                                                        <p className='lesson-label'>{item.teacherName}</p>
+                                                    </div>
+                                                </div>
+                                                <div className='lesson-right'>
+                                                    <div className='lesson-part'>
+                                                        <p className='lesson-label'>{item.start_of_lesson} - {item.end_of_lesson}</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
                                     return(
                                         <div className='lesson'>
-                                            <div></div>
+                                            <div className='lesson-left'>
+                                                <div className='lesson-time'>
+                                                    <div className='lesson-part'>
+                                                        <img src={star} alt='star'/>
+                                                        <p className='lesson-label'>{item.active}</p>
+                                                    </div>
+                                                    <div className='time-lables'>
+                                                        <p className='lesson-label'>{item.start_of_lesson} - {item.end_of_lesson}</p>
+                                                    </div>
+                                                </div>
+                                                <div className='lesson-part'>
+                                                    <img src={profile} alt='' />
+                                                    <p className='lesson-label'>{item.teacherName}</p>
+                                                </div>
+                                            </div>
+                                            <div className='lesson-right'>
+                                                <div className='lesson-part'>
+                                                    <img src={room} alt='' />
+                                                    <p className='lesson-label'>{item.room !== undefined ? item.room : ''}</p>
+                                                </div>
+                                                <div className='lesson-part'>
+                                                    <img src={group} alt='' />
+                                                    <p className='lesson-label'>{item.group !== undefined ? item.group : ''}</p>
+                                                </div>
+                                            </div>
                                         </div>
                                     )
                                 })                            

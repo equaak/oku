@@ -72,11 +72,10 @@ nav{
     display: flex;
     align-items: center;
     justify-content: space-between;
-    flex-wrap: wrap;
 }
 
 .dropdown-menu{
-    margin-right: 150px;
+    margin: 50px;
 }
 
 .dropdown-menu img{
